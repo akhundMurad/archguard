@@ -3,6 +3,6 @@ from archguard.enums._str_enum import StrEnum
 
 
 class RuleType(StrEnum):
-    IMPORT: str = auto()
-    NAMING: str = auto()
-    LAYER: str = auto()
+    MODULES: str = auto()
+    CLASSES: str = auto()
+    LAYER_ACCESS: str = auto()

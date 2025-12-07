@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from archguard.dto.rule import Rule
+from archguard.dto.violation import Violation
 
 
 @dataclass()
 class ScanResult:
     success: bool
-    violated_rules: list[Rule]
+    violations: list[Violation] = field(default_factory=list)

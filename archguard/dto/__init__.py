@@ -1,4 +1,3 @@
-from .function_info import FunctionInfo
 from .class_info import ClassInfo
 from .import_info import ImportInfo
 from .module_info import ModuleInfo
@@ -7,6 +6,5 @@ from .rule import Rule
 from .scan_result import ScanResult
 
 
-__all__ = ("FunctionInfo", "ClassInfo", "ImportInfo", 
-           "ModuleInfo", "ProjectRoot", "Rule",
-           "ScanResult")
+__all__ = ("ClassInfo", "ImportInfo", "ModuleInfo", 
+           "ProjectRoot", "Rule", "ScanResult")

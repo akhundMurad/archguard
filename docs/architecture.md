@@ -1,125 +1,224 @@
-Here is an updated **FLOW.md** where the new component (named **ArchGuardAnalyzer** as the primary recommendation) is included as a dedicated subsection and integrated naturally into the document.
+# Architecture Overview
 
-If you'd like a different component name, I can regenerate it instantly.
+This document describes the high-level architecture of the ArchGuard system, focusing on three primary umbrella components:
 
----
+1. **RuleBuilders** – fluent DSL for constructing architectural rules
+2. **API Component** – entrypoint providing a simple user-facing API for creating and running architecture checks
+3. **ArchGuardAnalyzer** – core engine orchestrating project parsing, rule evaluation, and reporting
 
-# Architecture Flow (WIP)
-
-This document describes the core processing flow between the main components of the system:
-**ArchGuardAnalyzer**, ... (TBD).
-
-The pipeline analyzes a project's structure, detects architecture violations, and produces a human-readable report.
-
----
-
-## 1. ArchGuardAnalyzer (Component Overview)
-
-`archguard.analyzer`
-
-`ArchGuardAnalyzer` is the umbrella component that encapsulates the three core classes responsible for the architecture-checking workflow:
-
-* **ModuleParser** – Builds the project structure model.
-* **Scanner** – Evaluates the structure against architecture rules.
-* **ViolationReporter** – Formats detected violations for CLI/CI use.
-
-You can think of `ArchGuardAnalyzer` as the orchestrator or processing engine that performs:
+Together, they form the complete architecture-checking pipeline:
 
 ```
-Parsing → Analysis → Reporting
+Rules → API → Analyzer → Parser → Scanner → Reporter → Result
 ```
 
-It does *not* implement these operations itself; rather, it delegates to the three internal classes and coordinates the overall flow.
+---
+
+# 1. RuleBuilders Component
+
+`RuleBuilders` is responsible for providing a fluent internal DSL for defining architecture rules.
+It does not perform parsing, scanning, or reporting; instead, it constructs rule objects that the system later evaluates.
+
+## 1.1 Included Classes
+
+### ModuleRuleBuilder
+
+Creates rules related to modules and their allowed imports.
+
+### ClassRuleBuilder
+
+Creates rules related to class naming, decorators, and file residency.
+
+Both implement the following protocols:
+
+### ClassRuleBuilderProtocol
+
+```python
+class ClassRuleBuilderProtocol(Protocol):
+    def that_reside_in(self, pattern: str) -> Self: ...
+    def that_do_not_reside_in(self, pattern: str) -> Self: ...
+    def should_have_name_matching(self, pattern: str) -> dto.Rule: ...
+    def should_have_decorators(self, decorators: list[str]) -> dto.Rule: ...
+```
+
+### ModuleRuleBuilderProtocol
+
+```python
+class ModuleRuleBuilderProtocol(Protocol):
+    def that_reside_in(self, pattern: str) -> Self: ...
+    def that_do_not_reside_in(self, pattern: str) -> Self: ...
+    def should_not_import(self, pattern: str) -> dto.Rule: ...
+    def should_only_import(self, *patterns: str) -> dto.Rule: ...
+```
+
+## 1.2 Purpose
+
+* Let clients define rules such as:
+
+  ```python
+  rule = module().that_reside_in("app.*").should_not_import("tests.*")
+  ```
+* Abstracts rule definition away from parsing/scanning concerns.
+* Produces `dto.Rule` objects consumed by the analyzer.
 
 ---
 
-## 2. High-Level Processing Flow
+# 2. API Component
 
-1. **ModuleParser** parses the project and constructs a DTO containing all detected modules and their dependencies.
-2. **Scanner** receives that DTO and applies a list of architecture rules, producing a structured violation list.
-3. **ViolationReporter** transforms the scan result into a readable output for humans or CI.
+The **API Component** is the entrypoint of the system.
+It provides a clean, user-friendly interface that encapsulates all lower-level operations.
+
+### Responsibilities
+
+* Provide public functions such as:
+
+  ```python
+  def check(project_root: str, rules: list[dto.Rule]) -> str: ...
+  ```
+* Accept rules constructed via RuleBuilders.
+* Orchestrate the entire process by delegating to ArchGuardAnalyzer.
+* Serve as the stable integration surface for:
+
+  * CLI
+  * CI systems
+  * Other Python programs using ArchGuard programmatically
+
+### The API does *not*:
+
+* Parse code
+* Evaluate rules
+* Format output
+
+It delegates these tasks to `ArchGuardAnalyzer`.
 
 ---
 
-## 3. Mermaid Diagram
+# 3. ArchGuardAnalyzer Component
+
+This umbrella component orchestrates the core architecture-checking pipeline.
+It includes the following main classes:
+
+* **ModuleParser**
+* **Scanner**
+* **ViolationReporter**
+
+## 3.1 ModuleParser
+
+### Responsibilities
+
+* Walk the filesystem
+* Identify modules/packages
+* Parse imports
+* Build dependency relationships
+* Produce `ProjectStructureDTO` containing:
+
+  * Modules
+  * Dependencies
+  * Additional metadata
+
+---
+
+## 3.2 Scanner
+
+### Responsibilities
+
+* Accept `ProjectStructureDTO` and list of rules
+* Apply architecture rules:
+
+  * Layered rules
+  * Naming rules
+  * Import restrictions
+  * Dependency constraints
+* Produce `ScanResult` containing violations
+
+---
+
+## 3.3 ViolationReporter
+
+### Responsibilities
+
+* Convert a `ScanResult` into:
+
+  * Human-readable text
+  * (Future) JSON / SARIF
+  * (Future) Visual diagrams
+* Summarize rule violations for CLI and CI output
+
+---
+
+# 4. System Flow
+
+## End-to-End Steps
+
+1. **Client** uses RuleBuilders to create rules.
+2. **Client** calls API Component:
+
+   ```python
+   result = api.check(project_root, rules)
+   ```
+3. The API delegates to **ArchGuardAnalyzer**.
+4. ArchGuardAnalyzer invokes:
+
+   * **ModuleParser** → builds `ProjectStructureDTO`
+   * **Scanner** → evaluates rules and produces `ScanResult`
+   * **ViolationReporter** → formats results
+5. The API returns the final human-readable report to the client.
+
+---
+
+# 5. Mermaid Diagram
 
 ```mermaid
 sequenceDiagram
-    title ArchGuard Core Flow (WIP)
+    title ArchGuard Architecture Flow
 
-    actor Client as Client
+    actor Client as Client / CLI / CI
+    participant RB as RuleBuilders
+    participant Rule as Rules
+    participant API as API Component
+    participant AA as ArchGuardAnalyzer
     participant MP as ModuleParser
     participant DTO as ProjectStructureDTO
     participant SC as Scanner
     participant SR as ScanResult
     participant VR as ViolationReporter
 
-    Client->>MP: parse_project_root(project_root_path)
-    note right of MP: Walks FS, parses modules,<br/>builds dependency graph
-    MP-->>Client: ProjectStructureDTO
-    MP->>DTO: construct(modules, dependencies)
+    Client->>RB: build rules (ModuleRuleBuilder / ClassRuleBuilder)
+    RB-->>Client: dto.Rule objects
 
-    Client->>SC: scan_project_root(ProjectStructureDTO, ruleset)
-    note right of SC: Apply architecture rules<br/>on modules & dependencies
-    SC-->>Client: ScanResult
-    SC->>SR: construct(violations, metadata)
+    Client->>API: check(project_root, rules)
 
-    Client->>VR: format(ScanResult)
-    note right of VR: Format violations to<br/>human-readable report
-    VR-->>Client: String (human-readable report)
+    API->>AA: analyze(project_root, rules)
+
+    AA->>MP: parse_project_root(project_root)
+    MP-->>AA: ProjectStructureDTO
+
+    AA->>SC: scan(ProjectStructureDTO, rules)
+    SC-->>AA: ScanResult
+
+    AA->>VR: format(ScanResult)
+    VR-->>AA: Report
+
+    AA-->>API: Report String
+    API-->>Client: Human-readable architecture summary
 ```
 
 ---
 
-## 4. Detailed Component Responsibilities
+# 6. Summary
 
-### **ModuleParser**
-
-* Traverses the project filesystem.
-* Detects modules, files, and imports.
-* Produces `ProjectRoot` containing:
-
-  * Module list
-  * Dependency graph
-  * Relevant metadata for rule checks
-
----
-
-### **Scanner**
-
-* Receives `ProjectRoot` + rule set.
-* Applies architecture rules (layer rules, naming rules, import rules, etc.).
-* Produces a `ScanResult` containing:
-
-  * Violations
-  * Metadata (rule IDs, locations, etc.)
-
----
-
-### **ViolationReporter**
-
-* Accepts a `ScanResult`.
-* Formats violations into:
-
-  * Human-readable CLI output
-  * (Future) JSON/SARIF formats
-  * (Future) Visual diagrams
-
----
-
-## 5. End-to-End Summary
+The system follows a clean and modular architecture:
 
 ```
-ArchGuardAnalyzer
-    → ModuleParser (parses code)
-    → Scanner (checks rules)
-    → ViolationReporter (formats output)
+RuleBuilders → API Component → ArchGuardAnalyzer
+                                → ModuleParser
+                                → Scanner
+                                → ViolationReporter
 ```
 
-Or more simply:
+This design ensures:
 
-```
-Project Root → Parser → Scanner → Reporter → Final Report
-```
-
-This flow keeps parsing, analysis, and reporting independent, testable, and extensible—while `ArchGuardAnalyzer` ties them together into a coherent pipeline.
+* **Separation of concerns**
+* **Extensibility** (new rule types, scanners, parsers)
+* **Testability**
+* **Stable API surface for users**
