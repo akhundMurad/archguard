@@ -1,8 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass()
 class ImportInfo:
-    from_module: str
-    to_module: str
+    import_module: str
     line_no: int
+    from_module: str | None = field(default=None)
