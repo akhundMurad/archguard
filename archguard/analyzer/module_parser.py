@@ -42,10 +42,13 @@ class ModuleParser(protocols.ModuleParserProtocol):
 
 def _find_imports(node: ast.AST) -> list[dto.ImportInfo]:
     imports: list[dto.ImportInfo] = []
+
     # Case 1: import x, y.z as t
     if isinstance(node, ast.Import):
         for alias in node.names:
-            imports.append(dto.ImportInfo(import_module=alias.name, line_no=node.lineno, from_module=None))
+            imports.append(
+                dto.ImportInfo(import_module=alias.name, line_no=node.lineno, from_module=None, level=0)
+            )
 
     # Case 2: from x.y import a, b as c
     elif isinstance(node, ast.ImportFrom):
@@ -56,9 +59,10 @@ def _find_imports(node: ast.AST) -> list[dto.ImportInfo]:
                     import_module=alias.name,  # imported name (e.g., "path", "sin")
                     line_no=node.lineno,
                     from_module=module,
+                    level=node.level,
                 )
             )
-    
+
     return imports
 
 
