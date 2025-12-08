@@ -17,6 +17,6 @@ class ClassRuleBuilderProtocol(Protocol):
 
     def should_have_name_matching(self, pattern: str) -> dto.Rule:
         raise NotImplementedError()
-    
+
     def should_have_decorators(self, decorators: list[str]) -> dto.Rule:
         raise NotImplementedError()

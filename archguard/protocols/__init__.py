@@ -5,5 +5,10 @@ from .class_rule_builder import ClassRuleBuilderProtocol
 from .module_rule_builder import ModuleRuleBuilderProtocol
 
 
-__all__ = ("ModuleParserProtocol", "ScannerProtocol", "ViolationReporterProtocol",
-           "ClassRuleBuilderProtocol", "ModuleRuleBuilderProtocol")
+__all__ = (
+    "ModuleParserProtocol",
+    "ScannerProtocol",
+    "ViolationReporterProtocol",
+    "ClassRuleBuilderProtocol",
+    "ModuleRuleBuilderProtocol",
+)

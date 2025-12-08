@@ -6,5 +6,4 @@ from .rule import Rule
 from .scan_result import ScanResult
 
 
-__all__ = ("ClassInfo", "ImportInfo", "ModuleInfo", 
-           "ProjectRoot", "Rule", "ScanResult")
+__all__ = ("ClassInfo", "ImportInfo", "ModuleInfo", "ProjectRoot", "Rule", "ScanResult")

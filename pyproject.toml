@@ -1,0 +1,44 @@
+[project]
+name = "archguard"
+version = "0.0.1"
+description = "A Python tool for enforcing and visualizing software architecture."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+authors = [
+  { name = "Murad Akhundov", email = "akhundov1murad@gmail.com" },
+]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+dependencies = [
+  # typing_extensions is required only on Python 3.10
+  "typing_extensions>=4.12; python_version == '3.10'",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "mypy>=1.10",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+archguard = "archguard.cli:main"
+
+[tool.ruff]
+src = ["archguard", "tests"]
+
+select = ["E", "F", "I", "B", "UP"]
+
+line-length = 119

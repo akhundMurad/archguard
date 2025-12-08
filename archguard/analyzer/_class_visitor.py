@@ -38,7 +38,6 @@ class _ClassVisitor(ast.NodeVisitor):
         self.stack.pop()
 
 
-
 def _expr_to_dotted_name(node: ast.AST) -> str:
     """
     Best-effort conversion of an expression to a dotted name string.
