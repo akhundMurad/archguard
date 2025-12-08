@@ -58,6 +58,8 @@ def _find_imports(node: ast.AST) -> list[dto.ImportInfo]:
                     from_module=module,
                 )
             )
+    
+    return imports
 
 
 def _find_classes(node: ast.AST, module: str = "") -> list[dto.ClassInfo]:

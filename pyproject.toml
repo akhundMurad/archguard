@@ -39,6 +39,6 @@ archguard = "archguard.cli:main"
 [tool.ruff]
 src = ["archguard", "tests"]
 
-select = ["E", "F", "I", "B", "UP"]
+lint.select = ["E", "F", "I", "B", "UP"]
 
 line-length = 119
