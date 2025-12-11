@@ -25,13 +25,13 @@ def make_project_root(modules: list[dto.ModuleInfo]) -> dto.ProjectRoot:
 def make_module_rule(
     *,
     reside_in: str | None = None,
-    should_not_reside_in: str | None = None,
+    do_not_reside_in: str | None = None,
     should_not_import_from: str | None = None,
     should_import_from: list[str] | None = None,
 ) -> dto.Rule:
     mr = dto.ModuleRule(
         reside_in=reside_in,
-        should_not_reside_in=should_not_reside_in,
+        do_not_reside_in=do_not_reside_in,
         should_not_import_from=should_not_import_from,
         should_import_from=should_import_from,
     )
@@ -156,7 +156,7 @@ def test_scanner_module_rule_reside_in_different_module_not_applied():
 
 def test_scanner_module_rule_do_not_reside_in_excludes_module():
     """
-    ModuleRule with should_not_reside_in == module.name should NOT apply to this
+    ModuleRule with do_not_reside_in == module.name should NOT apply to this
     module, even if the imports would otherwise violate.
     """
     imports = [make_import("forbidden.pkg")]
@@ -164,7 +164,7 @@ def test_scanner_module_rule_do_not_reside_in_excludes_module():
     project_root = make_project_root([module])
 
     rule = make_module_rule(
-        should_not_reside_in="forbidden.module",
+        do_not_reside_in="forbidden.module",
         should_not_import_from="forbidden.pkg",
     )
 

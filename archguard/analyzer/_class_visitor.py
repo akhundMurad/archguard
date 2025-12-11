@@ -3,7 +3,7 @@ import ast
 from archguard import dto
 
 
-class _ClassVisitor(ast.NodeVisitor):
+class ClassVisitor(ast.NodeVisitor):
     def __init__(self, module: str):
         self.module = module
         self.stack: list[str] = []

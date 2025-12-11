@@ -35,3 +35,35 @@ class ClassRule:
                 return True
 
         return False
+
+    def to_human_readable(self) -> str:
+        # Subject: which classes are targeted
+        subject = "classes"
+
+        if self.reside_in_module:
+            subject += f" that reside in module `{self.reside_in_module}`"
+        elif self.do_not_reside_in_module:
+            subject += f" that do not reside in module `{self.do_not_reside_in_module}`"
+        else:
+            subject = "all classes"
+
+        # Predicates: what constraints they must satisfy
+        predicates = []
+
+        if self.should_have_name_matching:
+            predicates.append(
+                f"should have names matching `{self.should_have_name_matching}`"
+            )
+
+        if self.should_have_decorators:
+            # Format list like: @service, @inject
+            decos = ", ".join(f"`@{d}`" for d in self.should_have_decorators)
+            predicates.append(f"should have decorators {decos}")
+
+        if not predicates:
+            return subject
+
+        predicate_text = " and ".join(predicates)
+
+        return f"{subject} {predicate_text}."
+

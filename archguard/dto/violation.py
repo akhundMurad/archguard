@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from archguard import enums
 from archguard.dto.class_info import ClassInfo
 from archguard.dto.import_info import ImportInfo
 from archguard.dto.rule import Rule

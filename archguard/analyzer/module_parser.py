@@ -3,7 +3,7 @@ import ast
 from pathlib import Path
 
 from archguard import dto, protocols
-from archguard.analyzer._class_visitor import _ClassVisitor
+from archguard.analyzer._class_visitor import ClassVisitor
 
 
 class ModuleParser(protocols.ModuleParserProtocol):
@@ -67,6 +67,6 @@ def _find_imports(node: ast.AST) -> list[dto.ImportInfo]:
 
 
 def _find_classes(node: ast.AST, module: str = "") -> list[dto.ClassInfo]:
-    visitor = _ClassVisitor(module=module)
+    visitor = ClassVisitor(module=module)
     visitor.visit(node)
     return visitor.classes
