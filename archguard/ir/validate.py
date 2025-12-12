@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from archguard.ir.types import ArchitectureIR, IREdge
+from archguard.ir.types import ArchitectureIR, CanonicalId, IREdge
 from archguard.reporting.types import EngineError, ReportLocation
 
 
@@ -30,21 +30,16 @@ def _edge_loc(e: IREdge) -> ReportLocation | None:
     )
 
 
+def _is_valid_canonical_id(cid: CanonicalId) -> bool:
+    # string form is never empty; validate components
+    if cid.code_root is None or not str(cid.code_root).strip():
+        return False
+    if cid.fqname is None or not str(cid.fqname).strip():
+        return False
+    return True
+
+
 def validate_ir(ir: ArchitectureIR, *, opts: IRValidationOptions | None = None) -> list[EngineError]:
-    """
-    Validate internal consistency of ArchitectureIR.
-
-    This validation is NOT about architecture correctness.
-    It checks:
-      - schema version supported (basic check)
-      - node identity uniqueness
-      - edge confidence range
-      - edge references (optional strict mode)
-      - basic size guards (optional)
-
-    Returns:
-      list[EngineError] (non-empty means IR is partially unreliable)
-    """
     opts = opts or IRValidationOptions()
     errors: list[EngineError] = []
 
@@ -74,11 +69,10 @@ def validate_ir(ir: ArchitectureIR, *, opts: IRValidationOptions | None = None) 
             details={"edges": len(ir.edges), "max_edges": opts.max_edges},
         ))
 
-    # node identity uniqueness
+    # node identity uniqueness + validity
     seen_nodes: set[str] = set()
     for n in ir.nodes:
-        nid = str(n.id)
-        if not nid.strip():
+        if not _is_valid_canonical_id(n.id):
             errors.append(EngineError(
                 type="runtime_error",
                 message="IR node has empty canonical id",
@@ -87,6 +81,7 @@ def validate_ir(ir: ArchitectureIR, *, opts: IRValidationOptions | None = None) 
             ))
             continue
 
+        nid = str(n.id)
         if nid in seen_nodes:
             errors.append(EngineError(
                 type="runtime_error",
@@ -115,8 +110,8 @@ def validate_ir(ir: ArchitectureIR, *, opts: IRValidationOptions | None = None) 
                 },
             ))
 
-        # canonical ids must be non-empty
-        if not str(e.src).strip() or not str(e.dst).strip():
+        # canonical ids must be valid
+        if not _is_valid_canonical_id(e.src) or not _is_valid_canonical_id(e.dst):
             errors.append(EngineError(
                 type="runtime_error",
                 message="Edge has empty src or dst canonical id",
@@ -124,7 +119,7 @@ def validate_ir(ir: ArchitectureIR, *, opts: IRValidationOptions | None = None) 
                 details={"edge": e.to_dict()},
             ))
 
-        # optional strict references check
+        # strict references
         if opts.strict_references:
             src_ok = str(e.src) in node_ids
             dst_ok = str(e.dst) in node_ids
