@@ -1,183 +1,305 @@
-# ArchGuard
+# ArchGuard — Architecture Testing & Architecture-as-Code
 
-**A Python-native architecture rules engine for enforcing architectural boundaries, detecting drift, and visualizing project structure.**
+**Open-source static architecture analysis with drift detection and high-level architectural contracts**
 
-ArchGuard helps Python teams keep their architecture clean, modular, and maintainable.  
-It analyzes your entire codebase, enforces rules for imports, naming, and layered design,  
-and provides developer-friendly reporting and CI integrations.
+ArchGuard is a tool for **architecture governance** that connects **static code analysis**,
+**Architecture-as-Code**, **C4 modeling**, and **“Git for Architecture”** into a single workflow.
 
----
-
-## Features (Planned & In Development)
-
-### Architecture Rules
-
-- **Import Rules** — enforce allowed or forbidden dependencies  
-- **Naming Rules** — enforce naming conventions across modules  
-- **Layered Architecture Rules** — define layers and ensure proper boundaries  
-
-### Static Indexer
-
-- AST-based **ProjectIndex** scanning your entire codebase  
-- One-time project analysis reused by all rules  
-- Foundation for visuals, drift detection, and fast rule evaluation  
-
-### Testing Integration
-
-- Native **pytest integration**
-- Human-readable violation reports  
-- Works with or without configuration files  
-
-### CI-Focused Capabilities
-
-- **Only fail on new violations** (baseline comparison)  
-- **Check only changed files** using Git diff  
-- Ideal for incremental adoption in large or legacy codebases  
-
-### Visualization
-
-- Generate dependency graphs (modules & layers)  
-- Local HTML explorer with interactive visualizations  
-- Quickly diagnose coupling, cycles, and hotspots  
-
-### Architecture Contracts (Code + Config)
-
-- Python DSL for defining architecture rules programmatically  
-- YAML/JSON configuration support for declarative architecture contracts  
+It is designed to make architecture **explicit, testable, reviewable, and versioned**, just like code.
 
 ---
 
-## Quick Example (Early API Sketch)
+## 🔷 Project Overview
 
-```python
-from archguard import modules
+ArchGuard consists of two complementary parts:
 
-def test_presentation_does_not_access_infrastructure():
-    rule = (
-        modules(root="myapp")
-        .that_reside_in("myapp.presentation..")
-        .should_not_import("myapp.infrastructure..")
-    )
-    rule.check()
+### **ArchGuard CLI (Open Source, MIT)**
+
+A developer-first CLI tool that analyzes real codebases and builds a **low-level architecture model**:
+
+* modules, packages, classes
+* dependencies between files, layers, and services
+* architectural layers (ui / application / domain / infra)
+* detection of architectural rule violations
+* architecture snapshots and diffs
+* architecture drift detection
+* CI / PR checks
+
+### **ArchGuard Pro / SaaS (Commercial)**
+
+A **high-level Architecture-as-Code platform** that defines and governs architecture at the system level:
+
+* bounded contexts
+* domains
+* containers / services (C4 C1–C3)
+* communication protocols (HTTP, gRPC, events)
+* use cases / flows
+* architectural rules and contracts
+* mapping high-level architecture → code
+
+The Pro platform stores architecture history, visualizes changes, and enforces architectural consistency across time.
+
+---
+
+## ✨ Key Features
+
+### Static Architecture Analysis
+
+* AST-based analysis (Python first; Java/TS/Go planned)
+* import and dependency graph generation
+* layer and container inference
+* forbidden dependency detection
+* DDD and Clean Architecture validation
+
+### Architecture-as-Code
+
+Define architecture directly in your repository:
+
+```
+architecture.yaml
+archguard.rules
 ```
 
-Layer example:
+Supports:
 
-```python
-from archguard import layers
+* contexts, domains, containers
+* layer mapping via glob patterns
+* high-level service relations
+* declarative architectural rules
 
-def test_layered_architecture():
-    rule = (
-        layers(root="myapp")
-        .define(
-            presentation="myapp.presentation..",
-            domain="myapp.domain..",
-            infrastructure="myapp.infrastructure..",
-        )
-        .where("presentation").may_only_access("domain")
-        .where("domain").may_only_access("infrastructure")
-        .where("infrastructure").may_not_be_accessed_by_any_layer()
-    )
-    rule.check()
+### Architecture Rule DSL
+
+Readable, expressive DSL for architecture testing:
+
+```txt
+rule "DDD: Domain must not depend on Infra" {
+  id = "ddd_layering"
+  severity = error
+
+  when dependency {
+    from.layer == "domain"
+    to.layer   == "infra"
+  }
+
+  forbid "Domain layer must not depend on Infra layer"
+}
 ```
+
+### Architecture Drift Detection
+
+ArchGuard compares:
+
+* **actual architecture** (from code)
+* **declared architecture** (high-level model)
+
+and detects:
+
+* newly introduced forbidden dependencies
+* missing or unexpected services
+* layer violations
+* architectural erosion over time
+
+### Snapshots & Diffs
+
+Architecture is versioned just like code:
+
+* snapshot generation per commit
+* diffs between snapshots
+* “fail only on new violations” mode
+* PR-level architecture checks
+
+### C4 Visualization (Pro)
+
+* C1: System Context
+* C2: Containers / Services
+* C3: Components
+* visual diff between architecture versions
 
 ---
 
-## Installation
+## 🚀 Getting Started
 
-*(Not yet available — package will be published to PyPI once v0.1.0 is released.)*
+### Installation
 
 ```bash
 pip install archguard
 ```
 
----
-
-## Roadmap
-
-ArchGuard follows a clear release plan from core features to full architecture governance.
-
-### **v0.1.0 – Core Rule Engine**
-
-* Import rules
-* Naming rules
-* Basic AST scanning
-* PyTest integration
-* Human-readable reporting
-
-### **v0.2.0 – Indexer + Layer Rules**
-
-* Central `ProjectIndex`
-* Layered architecture rules
-* CLI: `archguard scan`
-
-### **v0.3.0 – CI Integration**
-
-* Fail only on new violations
-* Check only changed files
-* Git diff support
-
-### **v0.4.0 – Visual Explorer**
-
-* Dependency graph output
-* Interactive HTML explorer
-* CLI: `archguard serve`
-
-### **v0.5.0 – Architecture Contracts**
-
-* YAML/JSON config support
-* Python DSL
-* Contract-driven rule evaluation
-
-For the full detailed roadmap:
-👉 **[ROADMAP.md](./ROADMAP.md)**
-
-👉 **[RELEASE_PLAN.md](./RELEASE_PLAN.md)**
+(Planned: pipx, Homebrew, Docker, standalone binary)
 
 ---
 
-## Project Goals
+## 🧭 CLI Usage
 
-ArchGuard aims to become:
+### Run architecture analysis
 
-* A **standard tool** for Python architecture testing
-* A foundation for **visualizing and understanding large codebases**
-* A **CI-friendly gatekeeper** preventing architecture drift
-* A flexible platform for architecture contracts across teams and repositories
-
----
-
-## 📂 Repository Structure (Early Sketch)
-
-```
-archguard/
-  ├── rules/
-  ├── indexer/
-  ├── reporting/
-  ├── cli/
-  ├── pytest_plugin.py
-  ├── __init__.py
-examples/
-tests/
-ROADMAP.md
-RELEASE_PLAN.md
+```bash
+archguard scan .
 ```
 
+### Check architectural rules
+
+```bash
+archguard rules check
+```
+
+### Create an architecture snapshot
+
+```bash
+archguard snapshot save
+```
+
+### Compare architecture versions
+
+```bash
+archguard diff HEAD~1
+```
+
+### Initialize architecture model
+
+```bash
+archguard init
+```
+
+This generates:
+
+* `architecture.yaml` — high-level architecture model
+* `archguard.rules` — architecture rule definitions
+
 ---
 
-## Contributing
+## 🏗️ High-Level Architecture Model
 
-Contributions, ideas, and feedback are welcome!
+Example `architecture.yaml`:
 
-Please check:
+```yaml
+version: 1
 
-* **[CONTRIBUTING.md](./CONTRIBUTING.md)** (coming soon)
-* GitHub issues for tasks & discussions
-* GitHub Project board for roadmap progress
+system:
+  id: healthcare-scheduling
+  name: "Healthcare Scheduling"
+
+containers:
+  scheduling-api:
+    context: scheduling
+    code:
+      roots:
+        - path: "services/scheduling-api"
+      layers:
+        ui:
+          - "services/scheduling-api/api/**"
+        application:
+          - "services/scheduling-api/app/**"
+        domain:
+          - "services/scheduling-api/domain/**"
+        infra:
+          - "services/scheduling-api/infra/**"
+```
 
 ---
 
-## License
+## 🧪 Architecture Rule DSL
 
-MIT License
-(See `LICENSE` file for full text.)
+Example `archguard.rules` file:
+
+```txt
+rule "No cross-context domain dependencies" {
+  id = "domain_cross_context"
+  severity = error
+
+  when dependency {
+    from.layer == "domain"
+    to.layer   == "domain"
+    from.context != to.context
+  }
+
+  forbid "Domain must not depend on domain of another bounded context"
+}
+```
+
+---
+
+## 📦 JSON Report Format (CI / IDE / PR)
+
+ArchGuard produces a structured JSON report:
+
+```bash
+archguard scan --format json > archguard-report.json
+```
+
+Example:
+
+```json
+{
+  "summary": {
+    "total_violations": 5
+  },
+  "violations": [
+    {
+      "rule": {
+        "id": "ddd_layering",
+        "severity": "error"
+      },
+      "message": "Domain must not depend on Infra",
+      "location": {
+        "file": "services/domain/foo.py",
+        "line": 12
+      },
+      "status": "new"
+    }
+  ]
+}
+```
+
+This format is designed for:
+
+* CI pipelines
+* GitHub / GitLab PR comments
+* IDE integrations
+* SaaS ingestion and visualization
+
+---
+
+## 🌐 ArchGuard Pro (SaaS)
+
+The commercial Pro platform provides:
+
+* architecture history and snapshots
+* visual architecture diffs
+* C4 diagram rendering
+* drift detection dashboards
+* PR checks and comments
+* multi-language analysis
+* enterprise-grade architecture rules
+
+The CLI remains **fully open-source (MIT)**.
+
+---
+
+## 🧱 Roadmap
+
+See `ROADMAP.md` for details.
+
+---
+
+## 🤝 Contributing
+
+Contributions, discussions, and feedback are welcome.
+See `CONTRIBUTING.md`.
+
+---
+
+## 📜 License
+
+* **ArchGuard CLI** — MIT License
+* **ArchGuard Pro** — Commercial SaaS
+
+---
+
+## ⭐ Why ArchGuard?
+
+* Architecture becomes **code**, not diagrams
+* Architecture rules are **testable and enforceable**
+* Architectural drift is detected early
+* Architecture evolves **safely and transparently**
+* Architecture review becomes part of the Git workflow
