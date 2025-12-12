@@ -278,7 +278,7 @@ The CLI remains **fully open-source (MIT)**.
 
 ## 🧱 Roadmap
 
-See `ROADMAP.md` for details.
+See https://github.com/akhundMurad/archguard/issues/35 for details.
 
 ---
 
