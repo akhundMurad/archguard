@@ -1,20 +1,20 @@
 import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Sequence
 
 from archguard.reporting.types import Violation
 
-# Keys
+# Stable hashing helpers
 
 def _stable_json(data: object) -> str:
     return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def _sha1(text: str) -> str:
-    # short stable key, good enough for dedupe/baseline matching
     return hashlib.sha1(text.encode("utf-8")).hexdigest()
 
+# Keys
 
 @dataclass(frozen=True, slots=True)
 class ViolationKeyStrategy:
@@ -22,37 +22,42 @@ class ViolationKeyStrategy:
     Builds stable keys for violations so baselines can match the same violation
     across runs/commits.
 
-    Default strategy:
-    - Include rule_id (so rule refactors don't collide)
-    - Include "subject identity":
+    Default strategy (stable across runs):
+    - Always includes rule id: v.rule.id
+    - Uses context "subject identity":
       - dependency: (dep_type, src_id, dst_id)
       - node: (node_id)
+    - If target is unknown, falls back to (rule_id + message)
     """
 
     def key_for(self, v: Violation) -> str:
-        details = v.details or {}
-        target = details.get("target")
+        ctx = v.context or {}
+        target = ctx.get("target")
+        rule_id = v.rule.id
 
         if target == "dependency":
             payload = {
-                "rule": v.rule_id,
+                "rule": rule_id,
                 "target": "dependency",
-                "dep_type": details.get("dep_type"),
-                "src_id": details.get("src_id"),
-                "dst_id": details.get("dst_id"),
+                "dep_type": ctx.get("dep_type"),
+                "src_id": ctx.get("src_id"),
+                "dst_id": ctx.get("dst_id"),
             }
             return _sha1(_stable_json(payload))
 
         if target == "node":
             payload = {
-                "rule": v.rule_id,
+                "rule": rule_id,
                 "target": "node",
-                "node_id": details.get("node_id"),
+                "node_id": ctx.get("node_id"),
             }
             return _sha1(_stable_json(payload))
 
-        # Fallback (shouldn't happen)
-        payload = {"rule": v.rule_id, "target": target, "message": v.message}
+        payload = {
+            "rule": rule_id,
+            "target": target,
+            "message": v.message,
+        }
         return _sha1(_stable_json(payload))
 
 # Baseline compare
@@ -76,7 +81,7 @@ class BaselineComparer:
     """
     Compare current violations against baseline violations.
     """
-    key_strategy: ViolationKeyStrategy = field(default_factory=ViolationKeyStrategy)
+    key_strategy: ViolationKeyStrategy = ViolationKeyStrategy()
 
     def compare(self, current: Sequence[Violation], baseline: Sequence[Violation]) -> BaselineResult:
         cur_by_key: dict[str, Violation] = {self.key_strategy.key_for(v): v for v in current}

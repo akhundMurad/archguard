@@ -20,6 +20,7 @@ class IRIndex:
     """
 
     # Nodes
+    nodes: tuple[IRNode, ...]
     nodes_by_id: Mapping[str, IRNode]
     nodes_by_kind: Mapping[SymbolKind, tuple[IRNode, ...]]
 
@@ -147,6 +148,7 @@ def build_index(ir: ArchitectureIR) -> IRIndex:
     frozen_in: Dict[str, tuple[IREdge, ...]] = {k: tuple(v) for k, v in in_edges_by_dst.items()}
 
     return IRIndex(
+        nodes=ir.nodes,
         nodes_by_id=nodes_by_id,
         nodes_by_kind=frozen_nodes_by_kind,
         nodes_by_container=frozen_nodes_by_container,

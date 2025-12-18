@@ -1,8 +1,6 @@
-from dataclasses import dataclass
 from typing import Any, Mapping
 
 
-@dataclass(frozen=True, slots=True)
 class RulesError(Exception):
     """
     Base class for all rules-related errors.
@@ -16,6 +14,20 @@ class RulesError(Exception):
     column: int | None = None
     details: Mapping[str, Any] | None = None
 
+    def __init__(
+        self,
+        message: str,
+        file: str | None = None,
+        line: int | None = None,
+        column: int | None = None,
+        details: Mapping[str, Any] | None = None,
+    ) -> None:
+        self.message = message
+        self.file = file
+        self.line = line
+        self.column = column
+        self.details = details
+
     def __str__(self) -> str:
         loc = ""
         if self.file:
@@ -28,19 +40,16 @@ class RulesError(Exception):
         return f"{loc}{self.message}"
 
 
-@dataclass(frozen=True, slots=True)
 class RulesParseError(RulesError):
     """Raised when rules input cannot be parsed."""
     pass
 
 
-@dataclass(frozen=True, slots=True)
 class RulesCompileError(RulesError):
     """Raised when parsed rules cannot be compiled into runtime predicates."""
     pass
 
 
-@dataclass(frozen=True, slots=True)
 class RulesEvalError(RulesError):
     """Raised when evaluating compiled rules fails unexpectedly."""
     pass

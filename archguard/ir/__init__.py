@@ -18,7 +18,7 @@ IR is:
 
 # Core types (stable public API)
 
-from .types import (
+from archguard.ir.types import (
     ArchitectureIR,
     IRNode,
     IREdge,
@@ -33,7 +33,7 @@ from .types import (
 
 # Identity / keys
 
-from .keys import (
+from archguard.ir.keys import (
     node_key,
     edge_key,
     dedupe_nodes,
@@ -42,17 +42,17 @@ from .keys import (
 
 # IR processing
 
-from .merge import DefaultIRMerger
-from .normalize import DefaultIRNormalizer
+from archguard.ir.merge import DefaultIRMerger
+from archguard.ir.normalize import DefaultIRNormalizer
 
 # Indexing & querying
 
-from .index import (
+from archguard.ir.index import (
     IRIndex,
     build_index,
 )
 
-from .select import (
+from archguard.ir.select import (
     NodeFilter,
     EdgeFilter,
     select_nodes,
@@ -63,7 +63,7 @@ from .select import (
 
 # Validation
 
-from .validate import (
+from archguard.ir.validate import (
     validate_ir,
     IRValidationOptions,
 )

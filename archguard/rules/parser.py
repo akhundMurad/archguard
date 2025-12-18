@@ -168,6 +168,7 @@ class DslRulesParserV0:
     def _indent_of(self, line: str) -> int:
         return len(line) - len(line.lstrip(" "))
 
+
     def _parse_mapping(self, lines: Sequence[str], *, filename: str, base_indent: int) -> dict:
         """
         Parse a mapping with possible nested mappings/lists.
@@ -268,41 +269,104 @@ class DslRulesParserV0:
         return out, i
 
     def _parse_list(self, lines: Sequence[str], *, filename: str, base_indent: int) -> tuple[list, int]:
+        """
+        Parse a YAML-like list.
+
+        Supported item forms:
+        1) inline scalar:
+            - from.layer == domain
+
+        2) inline mapping + continued mapping lines:
+            - field: from.layer
+            op: ==
+            value: domain
+
+        3) dash-only item with nested block:
+            -
+            field: from.layer
+            op: ==
+            value: domain
+        """
         items: list = []
         i = 0
+
         while i < len(lines):
             ln = lines[i]
             indent = self._indent_of(ln)
+
             if indent < base_indent:
                 break
+
+            # list items must start exactly at base_indent
             if indent != base_indent:
                 raise RulesParseError(message="Unexpected indentation in list", file=filename)
 
             stripped = ln.strip()
-            if not stripped.startswith("- "):
-                break
+            if not stripped.startswith("-"):
+                raise RulesParseError(message="Expected list item '- ...'", file=filename)
 
-            payload = stripped[2:].strip()
-            if payload:
-                # scalar item
-                items.append(payload)
-                i += 1
+            # content after '-'
+            rest = stripped[1:].lstrip()  # remove '-' and following spaces
+
+            # Case A: dash-only item, nested block follows
+            if rest == "":
+                # No inline content, try parse nested from following lines (if any)
+                if i + 1 >= len(lines):
+                    items.append(None)
+                    i += 1
+                    continue
+
+                next_ln = lines[i + 1]
+                next_indent = self._indent_of(next_ln)
+
+                if next_indent <= base_indent:
+                    # empty item
+                    items.append(None)
+                    i += 1
+                    continue
+
+                # decide whether nested is mapping or list
+                if next_ln.strip().startswith("-"):
+                    nested, consumed = self._parse_list(
+                        lines[i + 1 :], filename=filename, base_indent=next_indent
+                    )
+                else:
+                    nested, consumed = self._parse_mapping_with_consumed(
+                        lines[i + 1 :], filename=filename, base_indent=next_indent
+                    )
+
+                items.append(nested)
+                i += 1 + consumed
                 continue
 
-            # nested mapping item
+            # Case B: inline mapping start ("- key: val") + continuation
+            # Heuristic: if rest contains ":" treat as mapping starter.
+            # This matches your intended DSL: "- field: x" etc.
+            if ":" in rest:
+                item_indent = base_indent + 2
+
+                # synthesize the first mapping line at the nested indent level
+                first = (" " * item_indent) + rest
+
+                # collect continuation lines belonging to this list item:
+                # all subsequent lines indented >= item_indent
+                j = i + 1
+                while j < len(lines):
+                    ind_j = self._indent_of(lines[j])
+                    if ind_j < item_indent:
+                        break
+                    j += 1
+
+                block = [first] + list(lines[i + 1 : j])
+
+                nested = self._parse_mapping(block, filename=filename, base_indent=item_indent)
+                items.append(nested)
+                i = j
+                continue
+
+            # Case C: inline scalar (old behavior)
+            items.append(rest)
             i += 1
-            if i >= len(lines):
-                items.append({})
-                break
-            next_ln = lines[i]
-            next_indent = self._indent_of(next_ln)
-            if next_indent <= base_indent:
-                items.append({})
-                continue
-
-            nested, consumed = self._parse_mapping_with_consumed(lines[i:], filename=filename, base_indent=next_indent)
-            items.append(nested)
-            i += consumed
 
         return items, i
 
