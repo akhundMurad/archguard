@@ -1,6 +1,3 @@
-# archguard/rules/types.py
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import auto
 from typing import Any, Callable, Mapping
